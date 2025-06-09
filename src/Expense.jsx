@@ -1,39 +1,76 @@
 import { useState } from 'react';
 import './Expense.css';
+import Popup from './Popup';
 
 function Expense() {
   const [date, setDate] = useState('');
-  const [count, setCount] = useState(1);
+  const [count, setCount] = useState(0);
   const [method, setMethod] = useState('');
   const [paidTo, setPaidTo] = useState('');
   const [description, setDescription] = useState('');
-  const [amount, setAmount] = useState('');
+  const [amount, setAmount] = useState(0);
   const [expenses, setExpenses] = useState([]);
   const [total, setTotal] = useState(0);
   const [showModal, setShowModal] = useState(false);
+  const [editId, setEditId] = useState(null);
+  const [errors, setErrors] = useState({});
 
   const handleOk = () => {
-   
-    const newAmount = parseFloat(amount);
-    const newExpense = {
-      id: count,
-      date,
-      method,
-      paidTo,
-      description,
-      amount: newAmount,
-      total: total + newAmount,
-    };
+    const validationErrors = validateForm();
+    if (Object.keys(validationErrors).length > 0) {
+      setErrors(validationErrors);
+      return;
+    }
 
-    setExpenses([...expenses, newExpense]);
-    setTotal(total + newAmount);
-    setCount(count + 1);
+    const amt = Number(amount);
+    let oldAmount = 0;
+
+    if (editId !== null) {
+      const updatedExpenses = expenses.map((exp) => {
+        if (exp.id === editId) {
+          oldAmount = Number(exp.amount);
+          return {
+            ...exp,
+            date,
+            method,
+            paidTo,
+            description,
+            amount: amt,
+            total: amt !== oldAmount ? total - oldAmount + amt : total,
+          };
+        }
+        return exp;
+      });
+      setExpenses(updatedExpenses);
+
+      if (amt !== oldAmount) {
+        setTotal(total - oldAmount + amt);
+      }
+
+      setEditId(null);
+    } else {
+      const newExpense = {
+        id: count,
+        date,
+        method,
+        paidTo,
+        description,
+        amount: amt,
+        total: total + amt,
+      };
+
+      setExpenses([...expenses, newExpense]);
+      setTotal(total + amt);
+      setCount(count + 1);
+    }
+
     setShowModal(false);
     setDate('');
     setMethod('');
     setPaidTo('');
     setDescription('');
     setAmount('');
+    setErrors({});
   };
 
   const handleCancel = () => {
@@ -44,33 +81,46 @@ function Expense() {
     setShowModal(false);
   };
 
- function handleDelete(id) {
-  const newExpenses = [];
-  for (let i = 0; i < expenses.length; i++) {
-    if (expenses[i].id !== id) {
-      newExpenses.push(expenses[i]);
+  function handleDelete(val) {
+    const newExpenses = [];
+    for (let i = 0; i < expenses.length; i++) {
+      if (expenses[i].id !== val.id) {
+        newExpenses.push(expenses[i]);
+      } else {
+        setTotal(total - val.amount);
+      }
     }
+    setExpenses(newExpenses);
   }
-  setExpenses(newExpenses);
-}
-
 
   const handleEdit = (item) => {
+    setEditId(item.id);
     setDate(item.date);
     setMethod(item.method);
     setPaidTo(item.paidTo);
     setDescription(item.description);
-    setAmount(item.amount.toString());
-
-   const newExpenses = [];
-   for (let i = 0; i < expenses.length; i++) {
-   if (expenses[i].id !== item.id) {
-    newExpenses.push(expenses[i]);
-  }
-}
-setExpenses(newExpenses);
-    setTotal(total - item.amount);
+    setAmount(item.amount);
     setShowModal(true);
+  };
+
+  const validateForm = () => {
+    const errors = {};
+    if (date.trim() === '') {
+      errors.date = 'Date is required';
+    }
+    if (method.trim() === '') {
+      errors.method = 'Method of payment is required';
+    }
+    if (paidTo.trim() === '') {
+      errors.paidTo = 'Paid to is required';
+    }
+    if (description.trim() === '') {
+      errors.description = 'Description is required';
+    }
+    if (amount === '') {
+      errors.amount = 'Valid amount is required';
+    }
+    return errors;
   };
 
   return (
@@ -78,7 +128,7 @@ setExpenses(newExpenses);
       <div className="add-data">
         <h2>Expense Tracker</h2>
         <button className="add-button" onClick={() => setShowModal(true)}>
-         Expense
+          Expense
         </button>
       </div>
 
@@ -103,9 +153,13 @@ setExpenses(newExpenses);
               <td>{row.description}</td>
               <td>${row.amount}</td>
               <td>${row.total}</td>
-              <td className='table-edit' >
-                <button className="edit-button" onClick={() => handleEdit(row)}>Edit</button>
-                <button className="delete-button" onClick={() => handleDelete(row.id)}>Delete</button>
+              <td className="table-edit">
+                <button className="edit-button" onClick={() => handleEdit(row)}>
+                  Edit
+                </button>
+                <button className="delete-button" onClick={() => handleDelete(row)}>
+                  Delete
+                </button>
               </td>
             </tr>
           ))}
@@ -115,44 +169,22 @@ setExpenses(newExpenses);
       <h2>Total: ${total}.00</h2>
 
       {showModal && (
-        <div className="modal-popup">
-          <div className="modal">
-            <div className="header">
-              <h3>Add Expense</h3>
-              <button className="cancel-button" onClick={popupClose}>✖️</button>
-            </div>
-            <div className="inputs">
-              <div className="payment">
-                <p>Date of Payment</p>
-                <input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
-              </div>
-              <div className="payment">
-                <p>Method of Payment</p>
-                <select className="dropdown" value={method} onChange={(e) => setMethod(e.target.value)}>
-                  <option value="Cash">Cash</option>
-                  <option value="Credit Card">Credit Card</option>
-                  <option value="Check">Check</option>
-                </select>
-              </div>
-              <div className="payment">
-                <p>Paid to</p>
-                <input type="text" value={paidTo} onChange={(e) => setPaidTo(e.target.value)} />
-              </div>
-              <div className="payment">
-                <p>Description</p>
-                <input type="text" value={description} onChange={(e) => setDescription(e.target.value)} />
-              </div>
-              <div className="payment">
-                <p>Amount Paid</p>
-                <input type="number" value={amount} onChange={(e) => setAmount(e.target.value)} />
-              </div>
-            </div>
-            <div className="modal-buttons">
-              <button className="popup-cancel" onClick={handleCancel}>Cancel</button>
-              <button className="popup-ok" onClick={handleOk}>Ok</button>
-            </div>
-          </div>
-        </div>
+        <Popup
+          popupClose={popupClose}
+          handleOk={handleOk}
+          handleCancel={handleCancel}
+          errors={errors}
+          date={date}
+          setDate={setDate}
+          method={method}
+          setMethod={setMethod}
+          paidTo={paidTo}
+          setPaidTo={setPaidTo}
+          description={description}
+          setDescription={setDescription}
+          amount={amount}
+          setAmount={setAmount}
+        ></Popup>
       )}
     </>
   );
