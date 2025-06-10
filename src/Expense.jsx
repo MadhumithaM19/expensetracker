@@ -15,6 +15,8 @@ function Expense() {
   const [editId, setEditId] = useState(null);
   const [errors, setErrors] = useState({});
 
+
+  
   const handleOk = () => {
     const validationErrors = validateForm();
     if (Object.keys(validationErrors).length > 0) {
@@ -24,11 +26,19 @@ function Expense() {
 
     const amt = Number(amount);
     let oldAmount = 0;
+    let runningTotal = 0;
 
     if (editId !== null) {
       const updatedExpenses = expenses.map((exp) => {
-        if (exp.id === editId) {
+        runningTotal += exp.amount;
+        console.log("running tot 0",runningTotal);
+        if (exp.id == editId) {
           oldAmount = Number(exp.amount);
+          console.log("id",editId);
+          console.log("old amount",oldAmount);
+          console.log("amt",amt);
+          console.log("total",total);
+          runningTotal = amt !== oldAmount ?runningTotal - oldAmount + amt : runningTotal;
           return {
             ...exp,
             date,
@@ -36,17 +46,28 @@ function Expense() {
             paidTo,
             description,
             amount: amt,
-            total: amt !== oldAmount ? total - oldAmount + amt : total,
+            total: runningTotal, 
           };
         }
+        else if(exp.id > editId){
+          
+          oldAmount = Number(exp.amount);
+          console.log("id",exp.id);
+          console.log("old amount",oldAmount);
+          console.log("amt",exp.amount);
+          console.log("total",exp.total);
+          console.log("running tot",runningTotal);
+          return {
+            ...exp,
+            
+          total: runningTotal, 
+          };
+        }
+        
         return exp;
       });
       setExpenses(updatedExpenses);
-
-      if (amt !== oldAmount) {
-        setTotal(total - oldAmount + amt);
-      }
-
+      setTotal(runningTotal);
       setEditId(null);
     } else {
       const newExpense = {
@@ -81,17 +102,24 @@ function Expense() {
     setShowModal(false);
   };
 
-  function handleDelete(val) {
-    const newExpenses = [];
-    for (let i = 0; i < expenses.length; i++) {
-      if (expenses[i].id !== val.id) {
-        newExpenses.push(expenses[i]);
-      } else {
-        setTotal(total - val.amount);
-      }
+ function handleDelete(val) {
+  const newExpenses = [];
+  let runningTotal = 0;
+
+  for (let i = 0; i < expenses.length; i++) {
+    if (expenses[i].id !== val.id) {
+      runningTotal += expenses[i].amount;
+      console.log("runningTotal in delete",runningTotal);
+      newExpenses.push({
+        ...expenses[i],
+        total: runningTotal,
+      });
     }
-    setExpenses(newExpenses);
   }
+
+  setExpenses(newExpenses);
+  setTotal(runningTotal);
+}
 
   const handleEdit = (item) => {
     setEditId(item.id);
