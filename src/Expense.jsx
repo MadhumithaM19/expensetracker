@@ -21,6 +21,7 @@ function Expense() {
     const validationErrors = validateForm();
     if (Object.keys(validationErrors).length > 0) {
       setErrors(validationErrors);
+      console.log("validation errors",validationErrors);
       return;
     }
 
@@ -39,6 +40,10 @@ function Expense() {
           console.log("amt",amt);
           console.log("total",total);
           runningTotal = amt !== oldAmount ?runningTotal - oldAmount + amt : runningTotal;
+          
+
+          
+
           return {
             ...exp,
             date,
@@ -70,6 +75,12 @@ function Expense() {
       setTotal(runningTotal);
       setEditId(null);
     } else {
+      const validationErrors = validateForm();
+    if (Object.keys(validationErrors).length > 0) {
+      setErrors(validationErrors);
+      console.log("validation errors",validationErrors);
+      return;
+    }
       const newExpense = {
         id: count,
         date,
@@ -95,10 +106,22 @@ function Expense() {
   };
 
   const handleCancel = () => {
+    setDate('');
+    setMethod('');
+    setPaidTo('');
+    setDescription('');
+    setAmount(0);
+    setErrors({});
     setShowModal(false);
   };
 
   const popupClose = () => {
+    setDate('');
+    setMethod('');
+    setPaidTo('');
+    setDescription('');
+    setAmount(0);
+    setErrors({});
     setShowModal(false);
   };
 
@@ -131,11 +154,26 @@ function Expense() {
     setShowModal(true);
   };
 
-  const validateForm = () => {
+
+    const curDate = new  Date();
+    const inputDate = new Date(date);
+    
+    
+    console.log("converted date",curDate);
+    
+    console.log("input date type : ",typeof(inputDate));
+       console.log("input date = ", inputDate);
+    
+    const validateForm = () => {
     const errors = {};
-    if (date.trim() === '') {
+
+    if (date === "") {
       errors.date = 'Date is required';
     }
+    if(inputDate > curDate){
+      errors.date = "Date should not be in future";
+    }
+
     if (method.trim() === '') {
       errors.method = 'Method of payment is required';
     }
@@ -145,7 +183,7 @@ function Expense() {
     if (description.trim() === '') {
       errors.description = 'Description is required';
     }
-    if (amount === '') {
+    if (amount === 0) {
       errors.amount = 'Valid amount is required';
     }
     return errors;

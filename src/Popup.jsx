@@ -31,6 +31,7 @@ function Popup({
               onChange={(e) => setDate(e.target.value)}
             />
             {errors.date && <span style={{color:"red"}}>{errors.date}</span>}
+            {errors.dateval && <span style={{color:"red"}}>{errors.dateval}</span>}
           </div>
 
           <div className="payment">
